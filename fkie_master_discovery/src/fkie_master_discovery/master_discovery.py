@@ -638,7 +638,7 @@ class Discoverer(object):
         #     f.close()
         # except:
         #     pass
-        self.robots = set(list(self.new_robots) + list(self.robots))
+        self.robots = list(set(list(self.new_robots) + list(self.robots)))
         if self.HEARTBEAT_HZ > 0.:
             count_packets = len(self.robots) + (1 if self._send_mcast else 0)
             netload = self.HEARTBEAT_HZ * self.NETPACKET_SIZE * count_packets
