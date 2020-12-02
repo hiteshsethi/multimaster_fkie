@@ -627,6 +627,7 @@ class Discoverer(object):
             self._timer_watch_robot_file = threading.Timer(5, self._resync_robot_hosts)
 
     def _resync_robot_hosts(self):
+        rospy.logwarn("Reading from robot host file again")
         new_robots = []
         if not self._listen_mcast or not self._send_mcast:
             new_robots.append('localhost')
