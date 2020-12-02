@@ -638,6 +638,11 @@ class Discoverer(object):
         #     f.close()
         # except:
         #     pass
+        for masterkey, dicsovery in self.masters:
+            if dicsovery.masteruri:
+                fkie_url = dicsovery.masteruri.replace('rosmaster', 'fkie')
+                fkie_url = fkie_url.replace(':11311/', '')
+                self.new_robots.add(fkie_url)
         self.robots = list(set(list(self.new_robots) + list(self.robots)))
         if self.HEARTBEAT_HZ > 0.:
             count_packets = len(self.robots) + (1 if self._send_mcast else 0)
@@ -1002,9 +1007,6 @@ class Discoverer(object):
                                 timestamp_local=float(secs_l) + float(nsecs_l) / 1000000000.0,
                                 callback_master_state=self.publish_masterstate)
                             discovered_master = self.masters[master_key]
-                            fkie_url = discovered_master.masteruri.replace('rosmaster', 'fkie')
-                            fkie_url = fkie_url.replace(':11311/', '')
-                            self.new_robots.add(fkie_url)
                             if via == QueueReceiveItem.LOOPBACK:
                                 self._publish_current_state(address[0])
                 except Exception as e:
