@@ -638,7 +638,7 @@ class Discoverer(object):
         #     f.close()
         # except:
         #     pass
-        for masterkey, dicsovery in self.masters:
+        for masterkey, dicsovery in self.masters.items():
             if dicsovery.masteruri:
                 fkie_url = dicsovery.masteruri.replace('rosmaster', 'fkie')
                 fkie_url = fkie_url.replace(':11311/', '')
