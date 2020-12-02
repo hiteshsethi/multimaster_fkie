@@ -649,6 +649,7 @@ class Discoverer(object):
             netload = self.HEARTBEAT_HZ * self.NETPACKET_SIZE * count_packets
             rospy.loginfo("Approx. mininum avg. network load: %.2f bytes/s" % netload)
         self._timer_watch_robot_file = threading.Timer(5, self._resync_robot_hosts)
+        self._timer_watch_robot_file.start()
 
     def start(self):
         self._recv_tread.start()
