@@ -43,6 +43,7 @@ import sys
 import threading
 import time
 import traceback
+
 try:
     import xmlrpclib as xmlrpcclient  # python 2 compatibility
 except ImportError:
@@ -53,9 +54,9 @@ from .common import get_hostname
 from .master_monitor import MasterMonitor, MasterConnectionException
 from .udp import DiscoverSocket, QueueReceiveItem, SEND_ERRORS
 
-
 try:  # to avoid the problems with autodoc on ros.org/wiki site
-    from fkie_multimaster_msgs.msg import LinkState, LinkStatesStamped, MasterState, ROSMaster  # , SyncMasterInfo, SyncTopicInfo
+    from fkie_multimaster_msgs.msg import LinkState, LinkStatesStamped, MasterState, \
+        ROSMaster  # , SyncMasterInfo, SyncTopicInfo
     from fkie_multimaster_msgs.srv import DiscoverMasters, DiscoverMastersResponse
 except:
     pass
@@ -220,7 +221,8 @@ class DiscoveredMaster(object):
         '''
         self.ts_last_request = timestamp
         self.requests.append(timestamp)
-        rospy.logdebug("Unanswered requests [%d] for %s: %s" % (len(self.requests), str(self.masteruri), str(self.requests)))
+        rospy.logdebug(
+            "Unanswered requests [%d] for %s: %s" % (len(self.requests), str(self.masteruri), str(self.requests)))
 
     def requests_count(self):
         return len(self.requests)
@@ -348,16 +350,19 @@ class DiscoveredMaster(object):
                     socket.setdefaulttimeout(10)
                     timestamp, masteruri, mastername, nodename, monitoruri = remote_monitor.masterContacts()
                     self._del_error(self.ERR_SOCKET)
-                    rospy.logdebug("Got [%s, %s, %s, %s] from %s" % (timestamp, masteruri, mastername, nodename, monitoruri))
+                    rospy.logdebug(
+                        "Got [%s, %s, %s, %s] from %s" % (timestamp, masteruri, mastername, nodename, monitoruri))
                     timetosleep = 0
                 except socket.error as errobj:
-                    msg = "can't retrieve connection information using XMLRPC from [%s], socket error: %s" % (self.monitoruri, str(errobj))
+                    msg = "can't retrieve connection information using XMLRPC from [%s], socket error: %s" % (
+                    self.monitoruri, str(errobj))
                     rospy.logwarn(msg)
                     self._add_error(self.ERR_SOCKET, msg)
                     if errobj.errno in [errno.EHOSTUNREACH]:
                         timetosleep = 30
                 except:
-                    msg = "can't retrieve connection information using XMLRPC from [%s]: %s" % (self.monitoruri, traceback.format_exc())
+                    msg = "can't retrieve connection information using XMLRPC from [%s]: %s" % (
+                    self.monitoruri, traceback.format_exc())
                     rospy.logwarn(msg)
                     self._add_error(self.ERR_SOCKET, msg)
                 else:
@@ -365,7 +370,7 @@ class DiscoveredMaster(object):
                         self.masteruri = masteruri
                         self.mastername = mastername
                         self.discoverername = nodename
-#            self.monitoruri = monitoruri
+                        #            self.monitoruri = monitoruri
                         self.timestamp = float(timestamp)
                         self.online = True
                         # resolve the masteruri. Print an error if not reachable
@@ -374,7 +379,8 @@ class DiscoveredMaster(object):
                             self.masteruriaddr = socket.gethostbyname(self.master_hostname)
                             self._del_error(self.ERR_RESOLVE_NAME)
                         except socket.gaierror:
-                            msg = "Master discovered with not known hostname ROS_MASTER_URI:='%s'. Fix your network settings!" % str(self.masteruri)
+                            msg = "Master discovered with not known hostname ROS_MASTER_URI:='%s'. Fix your network settings!" % str(
+                                self.masteruri)
                             rospy.logwarn(msg)
                             self._add_error(self.ERR_RESOLVE_NAME, msg)
                         except:
@@ -524,7 +530,7 @@ class Discoverer(object):
 
         :type monitor_port:  int
         '''
-#    threading.Thread.__init__(self)
+        #    threading.Thread.__init__(self)
         self.do_finish = False
         self._services_initialized = False
         self.__lock = threading.RLock()
@@ -544,7 +550,9 @@ class Discoverer(object):
             rospy.logwarn("active_request_after [sec]: %s <= 0 set to 60" % self.ACTIVE_REQUEST_AFTER)
             self.ACTIVE_REQUEST_AFTER = 60
         self.robots = rospy.get_param('~robot_hosts', [])
-        self.CHANGE_NOTIFICATION_COUNT = rospy.get_param('~change_notification_count', Discoverer.CHANGE_NOTIFICATION_COUNT)
+        self.robot_host_file = rospy.get_param('~robot_host_file', '')
+        self.CHANGE_NOTIFICATION_COUNT = rospy.get_param('~change_notification_count',
+                                                         Discoverer.CHANGE_NOTIFICATION_COUNT)
         self._current_change_notification_count = 0
         self._send_mcast = rospy.get_param('~send_mcast', True)
         self._listen_mcast = rospy.get_param('~listen_mcast', True)
@@ -559,7 +567,8 @@ class Discoverer(object):
         if not self._listen_mcast:
             rospy.logwarn("Listen to multicast is disabled.")
         if not self._send_mcast and not self.robots:
-            rospy.logwarn("This master_discovery is invisible because it sends no heart beat messages! Set ~send_mcast/~listen_mcast to True or add hosts to ~robot_hosts.")
+            rospy.logwarn(
+                "This master_discovery is invisible because it sends no heart beat messages! Set ~send_mcast/~listen_mcast to True or add hosts to ~robot_hosts.")
         if not self._listen_mcast or not self._send_mcast:
             self.robots.append('localhost')
         self.robots = list(set(self.robots))
@@ -575,7 +584,8 @@ class Discoverer(object):
         rospy.loginfo("Active request after [sec]: %s" % self.ACTIVE_REQUEST_AFTER)
         rospy.loginfo("Remove after [sec]: %s" % self.REMOVE_AFTER)
         if self.REMOVE_AFTER <= self.ACTIVE_REQUEST_AFTER:
-            rospy.logwarn("'Active request after' should be less than 'remove after' to avoid removing masters from list!")
+            rospy.logwarn(
+                "'Active request after' should be less than 'remove after' to avoid removing masters from list!")
         rospy.loginfo("Robot hosts: " + str(self.robots))
         if self.HEARTBEAT_HZ > 0.:
             count_packets = len(self.robots) + (1 if self._send_mcast else 0)
@@ -612,12 +622,34 @@ class Discoverer(object):
         # set the callback to finish all running threads
         rospy.on_shutdown(self.on_shutdown)
         self._recv_tread = threading.Thread(target=self._recv_loop_from_queue)
+        self._timer_watch_robot_file = None
+        if self.robot_host_file:
+            self._timer_watch_robot_file = threading.Timer(5, self._resync_robot_hosts)
+
+    def _resync_robot_hosts(self):
+        new_robots = []
+        if not self._listen_mcast or not self._send_mcast:
+            new_robots.append('localhost')
+        try:
+            f = open(self.robot_host_file, "r")
+            for x in f:
+                new_robots.append(x)
+            f.close()
+        except:
+            pass
+        self.robots = list(set(new_robots))
+        if self.HEARTBEAT_HZ > 0.:
+            count_packets = len(self.robots) + (1 if self._send_mcast else 0)
+            netload = self.HEARTBEAT_HZ * self.NETPACKET_SIZE * count_packets
+            rospy.loginfo("Approx. mininum avg. network load: %.2f bytes/s" % netload)
 
     def start(self):
         self._recv_tread.start()
         self._timer_ros_changes.start()
         self._timer_stats.start()
         self._timer_heartbeat.start()
+        if self._timer_watch_robot_file:
+            self._timer_watch_robot_file.start()
 
     def _is_ipv6_group(self, addr):
         try:
@@ -631,12 +663,15 @@ class Discoverer(object):
         # create discovery socket
         # if multicast messages are disabled only unicast socket is created
         # unicast socket is also created if ~interface is defined
-        self.socket = DiscoverSocket(self.mcast_port, self.mcast_group, send_mcast=self._send_mcast, listen_mcast=self._listen_mcast)
+        self.socket = DiscoverSocket(self.mcast_port, self.mcast_group, send_mcast=self._send_mcast,
+                                     listen_mcast=self._listen_mcast)
         if self._send_mcast or self._listen_mcast:
             if not self.socket.hasEnabledMulticastIface() and doexit_on_error:
-                sys.exit("No enabled multicast interfaces available!\nAdd multicast support e.g. sudo ifconfig eth0 multicast or disable multicast by settings 'send_mcast' and 'listen_mcast' to False.\nExit")
+                sys.exit(
+                    "No enabled multicast interfaces available!\nAdd multicast support e.g. sudo ifconfig eth0 multicast or disable multicast by settings 'send_mcast' and 'listen_mcast' to False.\nExit")
         # set callback for received UDP messages
-#        self.socket.set_message_callback(self.recv_udp_msg)
+
+    #        self.socket.set_message_callback(self.recv_udp_msg)
 
     def _stop_timers(self):
         try:
@@ -649,6 +684,11 @@ class Discoverer(object):
             pass
         try:
             self._timer_stats.cancel()
+        except:
+            pass
+        try:
+            if self._timer_watch_robot_file:
+                self._timer_watch_robot_file.cancel()
         except:
             pass
 
@@ -710,7 +750,8 @@ class Discoverer(object):
                 # send update requests to group
                 if timer and self._init_notifications < self.INIT_NOTIFICATION_COUNT:
                     self._init_notifications += 1
-                    rospy.logdebug("Send requests while init %d/%d" % (self._init_notifications, self.INIT_NOTIFICATION_COUNT))
+                    rospy.logdebug(
+                        "Send requests while init %d/%d" % (self._init_notifications, self.INIT_NOTIFICATION_COUNT))
                     self._request_state()
             if timer and not self.do_finish:
                 if (self.HEARTBEAT_HZ > 0. or self._init_notifications < self.INIT_NOTIFICATION_COUNT):
@@ -759,7 +800,10 @@ class Discoverer(object):
                     # do not send a multicast request if one was received in last time
                     self.socket.send_queued(msg)
                 else:
-                    rospy.logdebug('Skipped send request to mcast group %s:%s. Last send was %.2fsec ago,  allowed %.2f' % (self.mcast_group, self.mcast_port, current_time - self._ts_received_mcast_request, 1. / self.current_check_hz))
+                    rospy.logdebug(
+                        'Skipped send request to mcast group %s:%s. Last send was %.2fsec ago,  allowed %.2f' % (
+                        self.mcast_group, self.mcast_port, current_time - self._ts_received_mcast_request,
+                        1. / self.current_check_hz))
             if self.robots and addresses is None:
                 rospy.logdebug('Send request as unicast to all robot hosts %s' % self.robots)
                 self.socket.send_queued(msg, self.robots)
@@ -900,7 +944,8 @@ class Discoverer(object):
                             # TODO: add a filter, if multicast messages are disabled?
                             if self.master_monitor.getCurrentState() is not None:
                                 if via == QueueReceiveItem.MULTICAST:
-                                    rospy.logdebug("Received a multicast request for a state update from %s" % address[0])
+                                    rospy.logdebug(
+                                        "Received a multicast request for a state update from %s" % address[0])
                                     self._ts_received_mcast_request = time.time()
                                     if self._send_mcast:
                                         self._publish_current_state()
@@ -926,13 +971,17 @@ class Discoverer(object):
                                                                          master.monitoruri))
                                     master.finish()
                                     self.publish_masterstate(state_remove)
-                                rospy.loginfo("Remove master discovery: http://%s:%s, with ROS_MASTER_URI=%s" % (address[0], monitor_port, master.masteruri))
+                                rospy.loginfo("Remove master discovery: http://%s:%s, with ROS_MASTER_URI=%s" % (
+                                address[0], monitor_port, master.masteruri))
                                 self._rem_address(address[0])
                                 del self.masters[master_key]
                         elif master_key in self.masters:
                             # update the timestamp of existing master
                             rospy.logdebug("Received a heartbeat from %s via %s socket" % (master_key[0], via))
-                            changed = self.masters[master_key].add_heartbeat(float(secs) + float(nsecs) / 1000000000.0, float(secs_l) + float(nsecs_l) / 1000000000.0, float(rate) / 10.0,)
+                            changed = self.masters[master_key].add_heartbeat(float(secs) + float(nsecs) / 1000000000.0,
+                                                                             float(secs_l) + float(
+                                                                                 nsecs_l) / 1000000000.0,
+                                                                             float(rate) / 10.0, )
                             if not self._changed:
                                 self._changed = changed
                         else:
@@ -943,12 +992,13 @@ class Discoverer(object):
                             rospy.loginfo("Detected master discovery: http://%s:%s" % (address[0], monitor_port))
                             self._add_address(address[0])
                             is_local = address[0].startswith('127.') or address[0] in get_local_addresses()
-                            self.masters[master_key] = DiscoveredMaster(monitoruri=''.join(['http://', address[0], ':', str(monitor_port)]),
-                                                                        is_local=is_local,
-                                                                        heartbeat_rate=float(rate) / 10.0,
-                                                                        timestamp=float(secs) + float(nsecs) / 1000000000.0,
-                                                                        timestamp_local=float(secs_l) + float(nsecs_l) / 1000000000.0,
-                                                                        callback_master_state=self.publish_masterstate)
+                            self.masters[master_key] = DiscoveredMaster(
+                                monitoruri=''.join(['http://', address[0], ':', str(monitor_port)]),
+                                is_local=is_local,
+                                heartbeat_rate=float(rate) / 10.0,
+                                timestamp=float(secs) + float(nsecs) / 1000000000.0,
+                                timestamp_local=float(secs_l) + float(nsecs_l) / 1000000000.0,
+                                callback_master_state=self.publish_masterstate)
                             if via == QueueReceiveItem.LOOPBACK:
                                 self._publish_current_state(address[0])
                 except Exception as e:
@@ -997,13 +1047,18 @@ class Discoverer(object):
                     if len(msg) == struct_size:
                         return (version, struct.unpack(Discoverer.HEARTBEAT_FMT, msg))
                     else:
-                        raise Exception("wrong message size; expected %d, got %d from %s" % (struct_size, len(msg), address))
+                        raise Exception(
+                            "wrong message size; expected %d, got %d from %s" % (struct_size, len(msg), address))
                 else:
                     raise Exception("wrong initial discovery message char %s received from %s" % (r, address))
             elif (version > Discoverer.VERSION):
-                raise Exception("newer heartbeat version %s (own: %s) from %s detected, please update your master_discovery" % (version, Discoverer.VERSION, address))
+                raise Exception(
+                    "newer heartbeat version %s (own: %s) from %s detected, please update your master_discovery" % (
+                    version, Discoverer.VERSION, address))
             elif (version < Discoverer.VERSION):
-                raise Exception("old heartbeat version %s detected (current: %s), please update master_discovery on %s" % (version, Discoverer.VERSION, address))
+                raise Exception(
+                    "old heartbeat version %s detected (current: %s), please update master_discovery on %s" % (
+                    version, Discoverer.VERSION, address))
             else:
                 raise Exception("heartbeat version %s expected, received: %s" % (Discoverer.VERSION, version))
         raise Exception("message is too small")
@@ -1079,7 +1134,8 @@ class Discoverer(object):
                     if v.mastername is not None and not v.errors and v.masteruri != self.master_monitor.getMasteruri():
                         try:
                             if v.masteruriaddr != v.monitor_hostname:
-                                msg = "Resolved host of ROS_MASTER_URI %s=%s and origin discovered IP=%s are different. Fix your network settings and restart master_discovery!" % (v.master_hostname, v.masteruriaddr, v.monitor_hostname)
+                                msg = "Resolved host of ROS_MASTER_URI %s=%s and origin discovered IP=%s are different. Fix your network settings and restart master_discovery!" % (
+                                v.master_hostname, v.masteruriaddr, v.monitor_hostname)
                                 if v.masteruriaddr is None or not v.masteruriaddr.startswith('127.'):
                                     local_addresses = ['localhost'] + get_local_addresses()
                                     # check 127/8 and local addresses
@@ -1132,7 +1188,7 @@ class Discoverer(object):
                         # send an active unicast request
                         self._request_state(k[0][0], [v])
                 self._request_state()
-#        self._send_current_state()
+            #        self._send_current_state()
             except:
                 traceback.print_exc()
         return []
