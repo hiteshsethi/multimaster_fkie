@@ -37,6 +37,7 @@ except ImportError:
 import errno
 import rospy
 import socket
+import string
 import std_srvs.srv
 import struct
 import sys
@@ -573,6 +574,7 @@ class Discoverer(object):
             self.robots.append('localhost')
         self.robots = list(set(self.robots))
         rospy.loginfo("Check the ROS Master[Hz]: " + str(self.ROSMASTER_HZ))
+        self.new_robots = set()
         if self.HEARTBEAT_HZ <= 0.:
             rospy.logwarn("Heart beat [Hz]: %s is increased to 0.02" % self.HEARTBEAT_HZ)
             self.HEARTBEAT_HZ = 0.02
@@ -623,26 +625,25 @@ class Discoverer(object):
         rospy.on_shutdown(self.on_shutdown)
         self._recv_tread = threading.Thread(target=self._recv_loop_from_queue)
         self._timer_watch_robot_file = None
-        if self.robot_host_file:
-            self._timer_watch_robot_file = threading.Timer(5, self._resync_robot_hosts)
+        self._timer_watch_robot_file = threading.Timer(0.1, self._resync_robot_hosts)
 
     def _resync_robot_hosts(self):
         rospy.logwarn("Reading from robot host file again")
-        new_robots = []
-        if not self._listen_mcast or not self._send_mcast:
-            new_robots.append('localhost')
-        try:
-            f = open(self.robot_host_file, "r")
-            for x in f:
-                new_robots.append(x)
-            f.close()
-        except:
-            pass
-        self.robots = list(set(new_robots))
+        # if not self._listen_mcast or not self._send_mcast:
+        #     new_robots.append('localhost')
+        # try:
+        #     f = open(self.robot_host_file, "r")
+        #     for x in f:
+        #         new_robots.append(x)
+        #     f.close()
+        # except:
+        #     pass
+        self.robots = set(list(self.new_robots) + list(self.robots))
         if self.HEARTBEAT_HZ > 0.:
             count_packets = len(self.robots) + (1 if self._send_mcast else 0)
             netload = self.HEARTBEAT_HZ * self.NETPACKET_SIZE * count_packets
             rospy.loginfo("Approx. mininum avg. network load: %.2f bytes/s" % netload)
+        self._timer_watch_robot_file = threading.Timer(5, self._resync_robot_hosts)
 
     def start(self):
         self._recv_tread.start()
@@ -1000,6 +1001,10 @@ class Discoverer(object):
                                 timestamp=float(secs) + float(nsecs) / 1000000000.0,
                                 timestamp_local=float(secs_l) + float(nsecs_l) / 1000000000.0,
                                 callback_master_state=self.publish_masterstate)
+                            discovered_master = self.masters[master_key]
+                            fkie_url = discovered_master.masteruri.replace('rosmaster', 'fkie')
+                            fkie_url = fkie_url.replace(':11311/', '')
+                            self.new_robots.add(fkie_url)
                             if via == QueueReceiveItem.LOOPBACK:
                                 self._publish_current_state(address[0])
                 except Exception as e:
