@@ -573,7 +573,7 @@ class Discoverer(object):
         if not self._listen_mcast or not self._send_mcast:
             self.robots.append('localhost')
         self.robots = list(set(self.robots))
-        self.initial_robots = self.robots.copy()
+        self.initial_robots = self.robots[:]
         rospy.loginfo("Check the ROS Master[Hz]: " + str(self.ROSMASTER_HZ))
         if self.HEARTBEAT_HZ <= 0.:
             rospy.logwarn("Heart beat [Hz]: %s is increased to 0.02" % self.HEARTBEAT_HZ)
