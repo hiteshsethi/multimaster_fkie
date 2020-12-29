@@ -642,7 +642,7 @@ class Discoverer(object):
                 fkie_url = dicsovery.masteruri.replace('rosmaster', 'fkie')
                 fkie_url = fkie_url.replace(':11311/', '')
                 new_robots.append(fkie_url)
-        self.robots = list(set(new_robots))
+        self.robots = list(set(new_robots + self.robots))
         if self.HEARTBEAT_HZ > 0.:
             count_packets = len(self.robots) + (1 if self._send_mcast else 0)
             netload = self.HEARTBEAT_HZ * self.NETPACKET_SIZE * count_packets
